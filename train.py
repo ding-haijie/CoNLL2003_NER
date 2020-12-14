@@ -17,14 +17,17 @@ batch_size = params['batch_size']
 max_epoch = params['max_epoch']
 feature_size = params['feature_size']
 feature_dim = params['feature_dim']
-learning_rate = params['learning_rate']
 word_embed_dim = params['word_embed_dim']
 char_embed_dim = params['char_embed_dim']
 hidden_dim = params['hidden_dim']
 dropout_p = params['dropout_p']
+optimizer = params['optimizer']
+learning_rate = params['learning_rate']
+momentum = params['momentum']
+weight_decay = params['weight_decay']
 grad_clip = params['grad_clip']
-seed = params['seed']
 device_id = params['device_id']
+seed = params['seed']
 resume = params['resume']
 
 fix_seed(seed)
@@ -61,8 +64,16 @@ model = NER(CRF(tag_size), word_size, char_size, feature_size, feature_dim,
             word_embed_dim, char_embed_dim, hidden_dim, dropout_p).cuda()
 model.apply(weights_init)
 
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-early_stop = EarlyStopping(mode='max', min_delta=0.01, patience=3)
+if optimizer == 'sgd':
+    optimizer = optim.SGD(
+        model.parameters(), lr=learning_rate, momentum=momentum)
+elif optimizer == 'adam':
+    optimizer = optim.Adam(
+        model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+else:
+    raise ValueError('only SGD or Adam !')
+
+early_stop = EarlyStopping(mode='max', min_delta=0.001, patience=3)
 
 if resume:
     checkpoint, cp_name = load_checkpoint(latest=True)
